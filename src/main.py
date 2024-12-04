@@ -206,6 +206,7 @@ class WorldBuildingApp(QMainWindow):
                 "src/config/limits.json",
                 "src/config/ui.json",
                 "src/config/system.json",
+                "src/config/map.json",
             ]
             config = Config(config_files)
 

@@ -283,6 +283,9 @@ class WorldBuildingUI(QWidget):
         self.tabs.addTab(self._create_relationships_tab(), "Relationships")
         self.tabs.addTab(self._create_properties_tab(), "Properties")
 
+        self.map_tab = None
+        self._map_tab_index = None
+
         layout.addWidget(self.tabs)
 
         # Suggest button
@@ -306,6 +309,26 @@ class WorldBuildingUI(QWidget):
         layout.addLayout(button_layout)
 
         return panel
+
+    def update_map_tab_visibility(self, show_map: bool) -> None:
+        """Update the visibility of the map tab based on node type."""
+        if show_map:
+            if self.map_tab is None:
+                # Create map tab if it doesn't exist
+                from ui.components.map_tab import MapTab
+
+                self.map_tab = MapTab()
+                self.map_tab.poi_selected.connect(self.controller.on_poi_selected)
+                self.map_tab.poi_moved.connect(self.controller.on_poi_moved)
+
+            # Add tab if not already present
+            if self._map_tab_index is None:
+                self._map_tab_index = self.tabs.addTab(self.map_tab, "Map")
+        else:
+            # Remove tab if present
+            if self._map_tab_index is not None:
+                self.tabs.removeTab(self._map_tab_index)
+                self._map_tab_index = None
 
     def _create_header_layout(self) -> QHBoxLayout:
         """
@@ -828,6 +851,8 @@ class WorldBuildingUI(QWidget):
         self.properties_table.setRowCount(0)
         self.relationships_table.setRowCount(0)
         self.image_label.clear()
+        if self.map_tab:
+            self.map_tab.clear_map()
 
     def set_image(self, image_path: Optional[str]) -> None:
         """

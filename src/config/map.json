@@ -1,0 +1,12 @@
+{
+    "MAX_MAP_IMAGE_SIZE_BYTES": 10485760,
+    "MAX_MAP_DIMENSION": 8192,
+    "MAX_POI_COUNT": 100,
+    "DEFAULT_MAP_UNIT": "m",
+    "DEFAULT_MAP_SCALE": 1.0,
+    "SUPPORTED_MAP_UNITS": ["m", "km", "mi", "ft"],
+    "MAP_IMAGES_PATH": "map_images",
+    "MAX_MAP_NAME_LENGTH": 100,
+    "MAX_MAP_SCALE": 10000.0,
+    "MIN_MAP_SCALE": 0.1
+}

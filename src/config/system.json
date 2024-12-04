@@ -4,7 +4,12 @@
         "description",
         "tags",
         "imagepath",
-        "easteregg"
+        "easteregg",
+        "map_width",
+        "map_height",
+        "map_scale",
+        "map_unit",
+        "map_image_hash"
     ],
     "VERSION": "0.1.0",
     "NAME_INPUT_DEBOUNCE_TIME_MS": 100,

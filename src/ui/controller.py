@@ -23,6 +23,7 @@ from models.worker_model import WorkerOperation
 from services.autocompletion_service import AutoCompletionService
 from services.fast_inject_service import FastInjectService
 from services.image_service import ImageService
+from services.map_service import MapService
 from services.node_operation_service import NodeOperationsService
 from services.property_service import PropertyService
 from services.relationship_tree_service import RelationshipTreeService
@@ -80,6 +81,9 @@ class WorldBuildingController(QObject):
         self.image_service = ImageService()
         self.worker_manager = WorkerManagerService(self.error_handler)
         self.fast_inject_service = FastInjectService()
+        self.map_service = MapService(
+            self.model, self.config, self.worker_manager, self.error_handler
+        )
 
         # Initialize the ui
         self.ui = ui
@@ -412,6 +416,18 @@ class WorldBuildingController(QObject):
         try:
             record = data[0]
             self._populate_node_fields(record)
+
+            # Check if this is a map node
+            labels = record.get("labels", [])
+            if "Map" in labels:
+                # Load map data
+                self.map_service.load_map(record["n"]["name"], self._handle_map_loaded)
+                # Show map tab if not already shown
+                self.ui.update_map_tab_visibility(True)
+            else:
+                # Hide map tab if shown
+                self.ui.update_map_tab_visibility(False)
+
             self.original_node_data = self.node_operations.collect_node_data(
                 name=self.ui.name_input.text().strip(),
                 description=self.ui.description_input.toHtml().strip(),
@@ -425,6 +441,26 @@ class WorldBuildingController(QObject):
 
         except Exception as e:
             self.error_handler.handle_error(f"Error populating node fields: {str(e)}")
+
+    def _handle_map_loaded(self, map_node: "MapNode") -> None:
+        """Handle loaded map data."""
+        try:
+            # Update map view with loaded data
+            if map_node.image_path:
+                metadata = {
+                    "scale": map_node.metadata.scale if map_node.metadata else 1.0,
+                    "unit": map_node.metadata.unit if map_node.metadata else "m",
+                    "width": map_node.metadata.width if map_node.metadata else 0,
+                    "height": map_node.metadata.height if map_node.metadata else 0,
+                }
+                self.ui.map_tab.set_map(map_node.image_path, metadata)
+
+                # Add POIs to map
+                for poi in map_node.pois:
+                    self.ui.map_tab.add_poi(poi.node_name, poi.x, poi.y, poi.icon)
+
+        except Exception as e:
+            self.error_handler.handle_error(f"Error displaying map: {str(e)}")
 
     def is_node_changed(self) -> bool:
         """Check if the node data has changed."""
@@ -737,7 +773,30 @@ class WorldBuildingController(QObject):
             image_path=self.current_image_path,
         )
 
-        if node_data:
+        if not node_data:
+            return
+
+        # Check if this is a map node
+        if "Map" in node_data["labels"]:
+            # Get scale settings from map tab
+            scale_settings = self.ui.map_tab.get_scale_settings()
+
+            # Add scale settings to node data
+            node_data["additional_properties"].update(
+                {
+                    "map_scale": scale_settings["scale"],
+                    "map_unit": scale_settings["unit"],
+                }
+            )
+
+            # Save through map service
+            self.map_service.save_map(
+                node_data=node_data,
+                image_path=self.current_image_path,
+                callback=self._handle_save_success,
+            )
+        else:
+            # Standard save for non-map nodes
             self.node_operations.save_node(node_data, self._handle_save_success)
 
     def _handle_save_success(self, _: Any) -> None:
